@@ -1,0 +1,795 @@
+import React, { useState, useEffect } from 'react';
+import { Package, ShoppingCart, Plus, Trash2, Search, Filter, Edit2, X, Save, Tag } from 'lucide-react';
+import { api } from '../services/api';
+import Button from '../components/Button';
+
+const AdminDashboard = () => {
+    const [activeTab, setActiveTab] = useState('inventory');
+    const [products, setProducts] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [showAddModal, setShowAddModal] = useState(false);
+
+    // Search & Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState('All');
+    const [filterStatus, setFilterStatus] = useState('All');
+    const [filterWilaya, setFilterWilaya] = useState('All');
+    const [filterAge, setFilterAge] = useState('All');
+
+    // Edit Order State
+    const [editingOrder, setEditingOrder] = useState(null);
+    const [editOrderData, setEditOrderData] = useState(null);
+
+    const [newProduct, setNewProduct] = useState({
+        name: '',
+        category: 'Streetwear',
+        price: '',
+        discountPrice: '',
+        image: '',
+        description: '',
+        sizes: 'S,M,L,XL',
+        inStock: true,
+        featured: false
+    });
+
+    const [wilayas, setWilayas] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [newWilaya, setNewWilaya] = useState({ code: '', name: '', deliveryFee: 500, communes: '' });
+
+    // Coupons State
+    const [coupons, setCoupons] = useState([]);
+    const [newCoupon, setNewCoupon] = useState({ code: '', discountType: 'percentage', discountValue: '', isActive: true });
+
+    const loadData = async () => {
+        try {
+            const [productsData, wilayasData, ordersData, couponsData] = await Promise.all([
+                api.getProducts(),
+                api.getWilayas(),
+                api.getOrders(),
+                api.getCoupons()
+            ]);
+            setProducts(productsData);
+            setWilayas(wilayasData);
+            setOrders(ordersData);
+            setCoupons(couponsData);
+        } catch (error) {
+            console.error('Failed to load data', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    // --- Product Logic ---
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this drop?')) {
+            try {
+                await api.deleteProduct(id);
+                loadData();
+            } catch (error) {
+                alert('Failed to delete product');
+            }
+        }
+    };
+
+    const handleToggleStock = async (product) => {
+        try {
+            await api.updateProduct(product._id, { inStock: !product.inStock });
+            loadData();
+        } catch (error) {
+            if (window.confirm('Are you sure you want to delete this order? This cannot be undone.')) {
+                try {
+                    await api.deleteOrder(id);
+                    loadData();
+                } catch (error) {
+                    alert('Failed to delete order');
+                }
+            }
+        };
+
+        const startEditOrder = (order) => {
+            setEditingOrder(order);
+            setEditOrderData({ ...order });
+        };
+
+        const saveOrderEdit = async () => {
+            try {
+                await api.updateOrder(editingOrder._id, editOrderData);
+                setEditingOrder(null);
+                setEditOrderData(null);
+                loadData();
+            } catch (error) {
+                alert('Failed to update order');
+            }
+        };
+
+        const handleStatusChange = async (orderId, newStatus) => {
+            try {
+                await api.updateOrderStatus(orderId, newStatus);
+                loadData();
+            } catch (error) {
+                alert('Failed to update order status');
+            }
+        };
+
+        // --- Wilaya Logic ---
+        const handleDeleteWilaya = async (id) => {
+            if (window.confirm('Are you sure?')) {
+                try {
+                    await api.deleteWilaya(id);
+                    loadData();
+                } catch (error) {
+                    alert('Failed to delete wilaya');
+                }
+            }
+        };
+
+        const handleAddWilaya = async (e) => {
+            e.preventDefault();
+            try {
+                await api.addWilaya({
+                    ...newWilaya,
+                    code: Number(newWilaya.code),
+                    deliveryFee: Number(newWilaya.deliveryFee),
+                    communes: newWilaya.communes.split(',').map(c => c.trim())
+                });
+                setNewWilaya({ code: '', name: '', deliveryFee: 500, communes: '' });
+                loadData();
+            } catch (error) {
+                alert('Failed to add wilaya');
+            }
+        };
+
+        // --- Coupon Logic ---
+        const handleDeleteCoupon = async (id) => {
+            if (window.confirm('Are you sure you want to delete this coupon?')) {
+                try {
+                    await api.deleteCoupon(id);
+                    loadData();
+                } catch (error) {
+                    alert('Failed to delete coupon');
+                }
+            }
+        };
+
+        const handleAddCoupon = async (e) => {
+            e.preventDefault();
+            try {
+                await api.createCoupon({
+                    ...newCoupon,
+                    discountValue: Number(newCoupon.discountValue)
+                });
+                setNewCoupon({ code: '', discountType: 'percentage', discountValue: '', isActive: true });
+                loadData();
+            } catch (error) {
+                alert('Failed to add coupon');
+            }
+        };
+
+        // --- Filtering Logic ---
+        const filteredProducts = products.filter(product => {
+            const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = filterCategory === 'All' || product.category === filterCategory;
+            return matchesSearch && matchesCategory;
+        });
+
+        const filteredOrders = orders.filter(order => {
+            const matchesSearch =
+                order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                order.customer.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = filterStatus === 'All' || order.status === filterStatus;
+            const matchesWilaya = filterWilaya === 'All' || order.customer.wilaya === filterWilaya;
+            const matchesAge = filterAge === 'All' || (order.customer.ageGroup && order.customer.ageGroup === filterAge);
+
+            return matchesSearch && matchesStatus && matchesWilaya && matchesAge;
+        });
+
+        return (
+            <div className="container mx-auto px-4 py-12 relative">
+                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <h1 className="text-3xl font-black tracking-tighter text-neutral-900 dark:text-white">DASHBOARD</h1>
+                    <div className="flex gap-4">
+                        <Button
+                            variant={activeTab === 'inventory' ? 'primary' : 'secondary'}
+                            onClick={() => { setActiveTab('inventory'); setSearchTerm(''); }}
+                            size="sm"
+                        >
+                            <Package size={16} className="mr-2" /> INVENTORY
+                        </Button>
+                        <Button
+                            variant={activeTab === 'wilayas' ? 'primary' : 'secondary'}
+                            onClick={() => setActiveTab('wilayas')}
+                            size="sm"
+                        >
+                            <Package size={16} className="mr-2" /> SHIPPING
+                        </Button>
+                        <Button
+                            variant={activeTab === 'orders' ? 'primary' : 'secondary'}
+                            onClick={() => { setActiveTab('orders'); setSearchTerm(''); }}
+                            size="sm"
+                        >
+                            <ShoppingCart size={16} className="mr-2" /> ORDERS
+                        </Button>
+                        <Button
+                            variant={activeTab === 'coupons' ? 'primary' : 'secondary'}
+                            onClick={() => setActiveTab('coupons')}
+                            size="sm"
+                        >
+                            <Tag size={16} className="mr-2" /> COUPONS
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Search and Filter Bar */}
+                {
+                    (activeTab === 'inventory' || activeTab === 'orders') && (
+                        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 mb-6 flex flex-col md:flex-row gap-4 items-center shadow-sm dark:shadow-none">
+                            <div className="relative flex-1 w-full">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder={activeTab === 'inventory' ? "Search products..." : "Search orders (ID, Name)..."}
+                                    className="w-full pl-10 pr-4 py-2 bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded text-sm focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                                <Filter size={18} className="text-neutral-500" />
+
+                                {/* Category Filter (Inventory Only) */}
+                                {activeTab === 'inventory' && (
+                                    <select
+                                        className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white"
+                                        value={filterCategory}
+                                        onChange={(e) => setFilterCategory(e.target.value)}
+                                    >
+                                        <option value="All">All Categories</option>
+                                        <option value="Hoodies">Hoodies</option>
+                                        <option value="Streetwear">Streetwear</option>
+                                        <option value="Anime">Anime</option>
+                                        <option value="Accessories">Accessories</option>
+                                    </select>
+                                )}
+
+                                {/* Order Filters (Orders Only) */}
+                                {activeTab === 'orders' && (
+                                    <>
+                                        <select
+                                            className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white"
+                                            value={filterStatus}
+                                            onChange={(e) => setFilterStatus(e.target.value)}
+                                        >
+                                            <option value="All">All Statuses</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Processing">Processing</option>
+                                            <option value="Shipped">Shipped</option>
+                                            <option value="Delivered">Delivered</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+
+                                        <select
+                                            className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white"
+                                            value={filterWilaya}
+                                            onChange={(e) => setFilterWilaya(e.target.value)}
+                                        >
+                                            <option value="All">All Wilayas</option>
+                                            {/* Get unique wilayas from orders or use wilayas list if available */}
+                                            {[...new Set(orders.map(o => o.customer.wilaya))].sort().map(w => (
+                                                <option key={w} value={w}>{w}</option>
+                                            ))}
+                                        </select>
+
+                                        <select
+                                            className="bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white"
+                                            value={filterAge}
+                                            onChange={(e) => setFilterAge(e.target.value)}
+                                        >
+                                            <option value="All">All Ages</option>
+                                            <option value="Under 18">Under 18</option>
+                                            <option value="18-24">18-24</option>
+                                            <option value="25-34">25-34</option>
+                                            <option value="35-44">35-44</option>
+                                            <option value="45-54">45-54</option>
+                                            <option value="55+">55+</option>
+                                        </select>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    activeTab === 'inventory' && (
+                        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm dark:shadow-none">
+                            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center">
+                                <h2 className="font-bold text-neutral-900 dark:text-white">PRODUCT LIST ({filteredProducts.length})</h2>
+                                <Button size="sm" variant="outline" onClick={() => setShowAddModal(true)}>
+                                    <Plus size={16} className="mr-2" /> ADD DROP
+                                </Button>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-neutral-100 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 font-mono">
+                                        <tr>
+                                            <th className="p-4">PRODUCT</th>
+                                            <th className="p-4">CATEGORY</th>
+                                            <th className="p-4">PRICE</th>
+                                            <th className="p-4">STOCK</th>
+                                            <th className="p-4">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                        {filteredProducts.map((product) => (
+                                            <tr key={product._id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                                                <td className="p-4 flex items-center gap-3">
+                                                    <img
+                                                        src={product.image}
+                                                        alt={product.name}
+                                                        className="w-10 h-10 object-cover bg-neutral-100 dark:bg-neutral-800"
+                                                    />
+                                                    <span className="font-bold text-neutral-900 dark:text-white">{product.name}</span>
+                                                </td>
+                                                <td className="p-4 text-neutral-600 dark:text-neutral-400">{product.category}</td>
+                                                <td className="p-4 font-mono text-emerald-600 dark:text-emerald-500">{product.price.toLocaleString()} DZD</td>
+                                                <td className="p-4">
+                                                    <button
+                                                        onClick={() => handleToggleStock(product)}
+                                                        className={`px-2 py-1 text-xs font-bold border ${product.inStock ? 'border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10' : 'border-red-500/50 text-red-500 hover:bg-red-500/10'} transition-colors`}
+                                                    >
+                                                        {product.inStock ? 'IN STOCK' : 'SOLD OUT'}
+                                                    </button>
+                                                </td>
+                                                <td className="p-4">
+                                                    <button
+                                                        onClick={() => handleDelete(product._id)}
+                                                        className="text-neutral-500 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    activeTab === 'wilayas' && (
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <div className="md:col-span-1">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+                                    <h2 className="font-bold mb-4 text-neutral-900 dark:text-white">ADD WILAYA</h2>
+                                    <form onSubmit={handleAddWilaya} className="space-y-4">
+                                        <input
+                                            type="number"
+                                            placeholder="Code (e.g. 16)"
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newWilaya.code}
+                                            onChange={e => setNewWilaya({ ...newWilaya, code: e.target.value })}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Name (e.g. Algiers)"
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newWilaya.name}
+                                            onChange={e => setNewWilaya({ ...newWilaya, name: e.target.value })}
+                                        />
+                                        <input
+                                            type="number"
+                                            placeholder="Delivery Fee (DZD)"
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newWilaya.deliveryFee}
+                                            onChange={e => setNewWilaya({ ...newWilaya, deliveryFee: e.target.value })}
+                                        />
+                                        <textarea
+                                            placeholder="Communes (comma separated)"
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newWilaya.communes}
+                                            onChange={e => setNewWilaya({ ...newWilaya, communes: e.target.value })}
+                                        />
+                                        <Button type="submit" className="w-full">ADD WILAYA</Button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm dark:shadow-none">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-neutral-100 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 font-mono">
+                                            <tr>
+                                                <th className="p-4">CODE</th>
+                                                <th className="p-4">NAME</th>
+                                                <th className="p-4">FEE</th>
+                                                <th className="p-4">COMMUNES</th>
+                                                <th className="p-4">ACTION</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                            {wilayas.map((w) => (
+                                                <tr key={w._id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                                                    <td className="p-4 font-mono text-neutral-900 dark:text-white">{w.code}</td>
+                                                    <td className="p-4 font-bold text-neutral-900 dark:text-white">{w.name}</td>
+                                                    <td className="p-4 text-emerald-600 dark:text-emerald-500">{w.deliveryFee} DZD</td>
+                                                    <td className="p-4 text-xs text-neutral-600 dark:text-neutral-400 max-w-xs truncate">
+                                                        {w.communes.join(', ')}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <button onClick={() => handleDeleteWilaya(w._id)} className="text-red-500 hover:text-red-400">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    activeTab === 'orders' && (
+                        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm dark:shadow-none">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-neutral-100 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 font-mono">
+                                        <tr>
+                                            <th className="p-4">ORDER ID</th>
+                                            <th className="p-4">CUSTOMER</th>
+                                            <th className="p-4">ITEMS</th>
+                                            <th className="p-4">TOTAL</th>
+                                            <th className="p-4">STATUS</th>
+                                            <th className="p-4">DATE</th>
+                                            <th className="p-4">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                        {filteredOrders.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" className="p-12 text-center text-neutral-500">
+                                                    <ShoppingCart size={48} className="mx-auto mb-4 opacity-20" />
+                                                    <p>NO ORDERS FOUND</p>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredOrders.map((order) => (
+                                                <tr key={order._id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer" onClick={() => startEditOrder(order)}>
+                                                    <td className="p-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">{order.orderId}</td>
+                                                    <td className="p-4">
+                                                        <div className="font-bold text-neutral-900 dark:text-white">{order.customer.fullName}</div>
+                                                        <div className="text-xs text-neutral-600 dark:text-neutral-400">{order.customer.phone}</div>
+                                                        <div className="text-xs text-neutral-500">{order.customer.wilaya} - {order.customer.commune}</div>
+                                                        {order.customer.ageGroup && (
+                                                            <div className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-500 mt-1">
+                                                                Age: {order.customer.ageGroup}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {order.items.map((item, idx) => (
+                                                            <div key={idx} className="text-xs mb-1 text-neutral-900 dark:text-white">
+                                                                <span className="text-emerald-600 dark:text-emerald-500">{item.quantity}x</span> {item.name} ({item.size})
+                                                            </div>
+                                                        ))}
+                                                    </td>
+                                                    <td className="p-4 font-mono text-emerald-600 dark:text-emerald-500">{order.totalAmount.toLocaleString()} DZD</td>
+                                                    <td className="p-4">
+                                                        <span className={`text-xs font-bold px-2 py-1 rounded border ${order.status === 'Delivered' ? 'border-emerald-500/50 text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' :
+                                                            order.status === 'Cancelled' ? 'border-red-500/50 text-red-500 bg-red-50 dark:bg-red-900/20' :
+                                                                'border-yellow-500/50 text-yellow-600 dark:text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                                            }`}>
+                                                            {order.status.toUpperCase()}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4 text-xs text-neutral-500">
+                                                        {new Date(order.createdAt).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); startEditOrder(order); }}
+                                                                className="text-neutral-500 hover:text-emerald-600 transition-colors"
+                                                                title="Edit Order"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); handleDeleteOrder(order._id); }}
+                                                                className="text-neutral-500 hover:text-red-500 transition-colors"
+                                                                title="Delete Order"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    activeTab === 'coupons' && (
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <div className="md:col-span-1">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 shadow-sm dark:shadow-none">
+                                    <h2 className="font-bold mb-4 text-neutral-900 dark:text-white">ADD COUPON</h2>
+                                    <form onSubmit={handleAddCoupon} className="space-y-4">
+                                        <input
+                                            type="text"
+                                            placeholder="Code (e.g. SAVE10)"
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none uppercase"
+                                            value={newCoupon.code}
+                                            onChange={e => setNewCoupon({ ...newCoupon, code: e.target.value })}
+                                        />
+                                        <select
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newCoupon.discountType}
+                                            onChange={e => setNewCoupon({ ...newCoupon, discountType: e.target.value })}
+                                        >
+                                            <option value="percentage">Percentage Off (%)</option>
+                                            <option value="fixed">Fixed Amount (DZD)</option>
+                                        </select>
+                                        <input
+                                            type="number"
+                                            placeholder={newCoupon.discountType === 'percentage' ? 'Value (e.g. 10 for 10%)' : 'Value (DZD)'}
+                                            required
+                                            min="0"
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newCoupon.discountValue}
+                                            onChange={e => setNewCoupon({ ...newCoupon, discountValue: e.target.value })}
+                                        />
+                                        <label className="flex items-center gap-2 text-neutral-900 dark:text-white">
+                                            <input
+                                                type="checkbox"
+                                                checked={newCoupon.isActive}
+                                                onChange={e => setNewCoupon({ ...newCoupon, isActive: e.target.checked })}
+                                                className="w-4 h-4"
+                                            />
+                                            <span>Active</span>
+                                        </label>
+                                        <Button type="submit" className="w-full">ADD COUPON</Button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-hidden shadow-sm dark:shadow-none">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-neutral-100 dark:bg-neutral-950 text-neutral-600 dark:text-neutral-400 font-mono">
+                                            <tr>
+                                                <th className="p-4">CODE</th>
+                                                <th className="p-4">TYPE</th>
+                                                <th className="p-4">VALUE</th>
+                                                <th className="p-4">STATUS</th>
+                                                <th className="p-4">ACTION</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                            {coupons.map((coupon) => (
+                                                <tr key={coupon._id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                                                    <td className="p-4 font-mono font-bold text-neutral-900 dark:text-white">{coupon.code}</td>
+                                                    <td className="p-4 text-neutral-600 dark:text-neutral-400 capitalize">{coupon.discountType}</td>
+                                                    <td className="p-4 text-emerald-600 dark:text-emerald-500 font-mono">
+                                                        {coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : `${coupon.discountValue} DZD`}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2 py-1 text-xs font-bold border ${coupon.isActive ? 'border-emerald-500/50 text-emerald-500' : 'border-neutral-500/50 text-neutral-500'}`}>
+                                                            {coupon.isActive ? 'ACTIVE' : 'INACTIVE'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <button onClick={() => handleDeleteCoupon(coupon._id)} className="text-red-500 hover:text-red-400">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* Edit Order Modal */}
+                {
+                    editingOrder && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-lg p-6 relative shadow-lg max-h-[90vh] overflow-y-auto">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-bold text-neutral-900 dark:text-white">EDIT ORDER: {editingOrder.orderId}</h2>
+                                    <button onClick={() => setEditingOrder(null)} className="text-neutral-500 hover:text-red-500">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Status */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-neutral-500 mb-2">ORDER STATUS</label>
+                                        <select
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={editOrderData.status}
+                                            onChange={(e) => setEditOrderData({ ...editOrderData, status: e.target.value })}
+                                        >
+                                            <option value="Pending">Pending</option>
+                                            <option value="Processing">Processing</option>
+                                            <option value="Shipped">Shipped</option>
+                                            <option value="Delivered">Delivered</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Customer Info */}
+                                    <div>
+                                        <label className="block text-xs font-bold text-neutral-500 mb-2">CUSTOMER DETAILS</label>
+                                        <div className="space-y-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Full Name"
+                                                className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                                value={editOrderData.customer.fullName}
+                                                onChange={(e) => setEditOrderData({
+                                                    ...editOrderData,
+                                                    customer: { ...editOrderData.customer, fullName: e.target.value }
+                                                })}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Phone"
+                                                className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                                value={editOrderData.customer.phone}
+                                                onChange={(e) => setEditOrderData({
+                                                    ...editOrderData,
+                                                    customer: { ...editOrderData.customer, phone: e.target.value }
+                                                })}
+                                            />
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Wilaya"
+                                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                                    value={editOrderData.customer.wilaya}
+                                                    onChange={(e) => setEditOrderData({
+                                                        ...editOrderData,
+                                                        customer: { ...editOrderData.customer, wilaya: e.target.value }
+                                                    })}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Commune"
+                                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                                    value={editOrderData.customer.commune}
+                                                    onChange={(e) => setEditOrderData({
+                                                        ...editOrderData,
+                                                        customer: { ...editOrderData.customer, commune: e.target.value }
+                                                    })}
+                                                />
+                                            </div>
+                                            <textarea
+                                                placeholder="Address"
+                                                rows="2"
+                                                className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                                value={editOrderData.customer.address}
+                                                onChange={(e) => setEditOrderData({
+                                                    ...editOrderData,
+                                                    customer: { ...editOrderData.customer, address: e.target.value }
+                                                })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                                        <Button variant="secondary" className="flex-1" onClick={() => setEditingOrder(null)}>
+                                            CANCEL
+                                        </Button>
+                                        <Button className="flex-1" onClick={saveOrderEdit}>
+                                            <Save size={18} className="mr-2" /> SAVE CHANGES
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+
+                {/* Add Product Modal */}
+                {
+                    showAddModal && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-md p-6 relative shadow-lg">
+                                <h2 className="text-xl font-bold mb-6 text-neutral-900 dark:text-white">ADD NEW DROP</h2>
+                                <form onSubmit={handleAddProduct} className="space-y-4">
+                                    <input
+                                        type="text"
+                                        placeholder="Product Name"
+                                        required
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                        value={newProduct.name}
+                                        onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
+                                    />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <select
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newProduct.category}
+                                            onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
+                                        >
+                                            <option value="Hoodies">Hoodies</option>
+                                            <option value="Streetwear">Streetwear</option>
+                                            <option value="Anime">Anime</option>
+                                            <option value="Accessories">Accessories</option>
+                                        </select>
+                                        <input
+                                            type="number"
+                                            placeholder="Price (DZD)"
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                            value={newProduct.price}
+                                            onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
+                                        />
+                                    </div>
+                                    <input
+                                        type="number"
+                                        placeholder="Discount Price (DZD) - Optional"
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                        value={newProduct.discountPrice}
+                                        onChange={e => setNewProduct({ ...newProduct, discountPrice: e.target.value })}
+                                    />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                        onChange={e => setNewProduct({ ...newProduct, image: e.target.files[0] })}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Sizes (comma separated, e.g. S,M,L)"
+                                        required
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                        value={newProduct.sizes}
+                                        onChange={e => setNewProduct({ ...newProduct, sizes: e.target.value })}
+                                    />
+                                    <textarea
+                                        placeholder="Description"
+                                        required
+                                        rows="3"
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none"
+                                        value={newProduct.description}
+                                        onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
+                                    />
+                                    <div className="flex gap-4 mt-6">
+                                        <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowAddModal(false)}>
+                                            CANCEL
+                                        </Button>
+                                        <Button type="submit" className="flex-1">
+                                            CREATE DROP
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )
+                }
+            </div>
+        );
+    };
+
+    export default AdminDashboard;
