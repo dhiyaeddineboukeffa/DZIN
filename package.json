@@ -1,0 +1,15 @@
+{
+  "name": "dzin-shop-deployment",
+  "version": "1.0.0",
+  "description": "Root configuration for Railway deployment",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "install-client": "cd backend/client && npm install",
+    "build-client": "cd backend/client && npm run build",
+    "build": "npm run install-backend && npm run install-client && npm run build-client",
+    "start": "cd backend && node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
