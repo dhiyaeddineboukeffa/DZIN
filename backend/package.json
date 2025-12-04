@@ -11,7 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "scripts": {
-    "build:client": "npm --prefix ../dzin-shop install && npm --prefix ../dzin-shop run build && node scripts/copy-dist.js",
+    "build:client": "npm --prefix ./client install && npm --prefix ./client run build && node scripts/copy-dist.js",
     "postinstall": "npm run build:client",
     "start": "node server.js"
   },

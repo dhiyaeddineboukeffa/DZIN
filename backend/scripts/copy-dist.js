@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const clientDist = path.join(root, '..', 'dzin-shop', 'dist');
+const clientDist = path.join(root, 'client', 'dist');
 const publicDir = path.join(root, 'public');
 
 function removeDir(dir) {
