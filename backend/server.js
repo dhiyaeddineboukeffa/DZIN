@@ -32,12 +32,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/wilayas', wilayaRoutes);
 app.use('/api/coupons', couponRoutes);
 
-// Serve static assets in production
+// Serve static assets in production (now serving built client from backend/public)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, '../dzin-shop/dist')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../dzin-shop/dist/index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start Server
