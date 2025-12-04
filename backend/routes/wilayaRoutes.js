@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Wilaya = require('../models/Wilaya');
+const { authenticateAdmin } = require('../middleware/auth');
 
 // GET All Wilayas
 router.get('/', async (req, res) => {
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST Add Wilaya (Admin)
-router.post('/', async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
     try {
         const wilaya = new Wilaya(req.body);
         await wilaya.save();
@@ -24,7 +25,7 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE Wilaya (Admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         await Wilaya.findByIdAndDelete(req.params.id);
         res.json({ message: 'Wilaya deleted' });

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const { authenticateAdmin } = require('../middleware/auth');
 
 // POST Create Order
 router.post('/', async (req, res) => {
@@ -25,7 +26,7 @@ router.post('/', async (req, res) => {
 });
 
 // GET All Orders (Admin only)
-router.get('/', async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 });
         res.json(orders);
@@ -35,7 +36,7 @@ router.get('/', async (req, res) => {
 });
 
 // PUT Update Order (Status or Full Update)
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateAdmin, async (req, res) => {
     try {
         const updates = req.body;
         const order = await Order.findByIdAndUpdate(
@@ -50,7 +51,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE Order
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         await Order.findByIdAndDelete(req.params.id);
         res.json({ message: 'Order deleted' });

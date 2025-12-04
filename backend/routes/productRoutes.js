@@ -6,6 +6,7 @@ const path = require('path');
 
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { authenticateAdmin } = require('../middleware/auth');
 
 // Configure Cloudinary
 cloudinary.config({
@@ -47,7 +48,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST Create Product (Admin only)
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', authenticateAdmin, upload.single('image'), async (req, res) => {
     console.log('========================================');
     console.log('POST /api/products called');
     console.log('Headers:', req.headers['content-type']);
@@ -91,7 +92,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 });
 
 // PUT Update Product (Admin only)
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) => {
     try {
         const updates = req.body;
         if (req.file) {
@@ -111,7 +112,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 });
 
 // DELETE Product (Admin only)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         await Product.findByIdAndDelete(req.params.id);
         res.json({ message: 'Product deleted' });

@@ -18,9 +18,6 @@ router.post('/login', async (req, res) => {
         let isValid = false;
         if (adminUser) {
             isValid = await bcrypt.compare(password, adminUser.passwordHash);
-        } else if (password === 'admin123') {
-            // Fallback for initial setup if DB is empty
-            isValid = true;
         }
 
         if (!isValid) {

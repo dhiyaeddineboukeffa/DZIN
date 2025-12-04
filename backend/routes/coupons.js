@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Coupon = require('../models/Coupon');
+const { authenticateAdmin } = require('../middleware/auth');
 
 // Get all coupons
-router.get('/', async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
     try {
         const coupons = await Coupon.find().sort({ createdAt: -1 });
         res.json(coupons);
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 // Create a coupon
-router.post('/', async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
     const coupon = new Coupon({
         code: req.body.code,
         discountType: req.body.discountType,
@@ -30,7 +31,7 @@ router.post('/', async (req, res) => {
 });
 
 // Delete a coupon
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         await Coupon.findByIdAndDelete(req.params.id);
         res.json({ message: 'Coupon deleted' });

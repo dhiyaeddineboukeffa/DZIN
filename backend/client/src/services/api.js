@@ -1,5 +1,10 @@
 const API_URL = '/api';
 
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('dzin_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const api = {
     // Wilayas
     getWilayas: async () => {
@@ -51,15 +56,12 @@ export const api = {
     },
     createProduct: async (productData) => {
         try {
-            // Check if productData is FormData
             const isFormData = productData instanceof FormData;
-            console.log('📤 Sending to:', `${API_URL}/products`);
-            console.log('📋 Is FormData?', isFormData);
-
-            const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+            const headers = {
+                ...getAuthHeaders(),
+                ...(isFormData ? {} : { 'Content-Type': 'application/json' })
+            };
             const body = isFormData ? productData : JSON.stringify(productData);
-
-            console.log('🔍 Request details:', { method: 'POST', headers });
 
             const response = await fetch(`${API_URL}/products`, {
                 method: 'POST',
@@ -67,27 +69,23 @@ export const api = {
                 body
             });
 
-            console.log('📥 Response status:', response.status, response.statusText);
-
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Server error response:', errorText);
                 throw new Error(`Failed to create product: ${response.status} - ${errorText}`);
             }
 
             return response.json();
         } catch (error) {
-            console.error('❌ Fetch error details:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack
-            });
+            console.error('Fetch error:', error);
             throw error;
         }
     },
     updateProduct: async (id, productData) => {
         const isFormData = productData instanceof FormData;
-        const headers = isFormData ? {} : { 'Content-Type': 'application/json' };
+        const headers = {
+            ...getAuthHeaders(),
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' })
+        };
         const body = isFormData ? productData : JSON.stringify(productData);
 
         const response = await fetch(`${API_URL}/products/${id}`, {
@@ -100,7 +98,8 @@ export const api = {
     },
     deleteProduct: async (id) => {
         const response = await fetch(`${API_URL}/products/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error('Failed to delete product');
         return response.json();
@@ -109,14 +108,19 @@ export const api = {
 
     // Orders
     getOrders: async () => {
-        const response = await fetch(`${API_URL}/orders`);
+        const response = await fetch(`${API_URL}/orders`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch orders');
         return response.json();
     },
     updateOrder: async (id, updates) => {
         const response = await fetch(`${API_URL}/orders/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify(updates)
         });
         if (!response.ok) throw new Error('Failed to update order');
@@ -125,7 +129,10 @@ export const api = {
     updateOrderStatus: async (id, status) => {
         const response = await fetch(`${API_URL}/orders/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({ status })
         });
         if (!response.ok) throw new Error('Failed to update status');
@@ -133,7 +140,8 @@ export const api = {
     },
     deleteOrder: async (id) => {
         const response = await fetch(`${API_URL}/orders/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error('Failed to delete order');
         return response.json();
@@ -143,7 +151,10 @@ export const api = {
     addWilaya: async (wilayaData) => {
         const response = await fetch(`${API_URL}/wilayas`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify(wilayaData)
         });
         if (!response.ok) throw new Error('Failed to add wilaya');
@@ -151,7 +162,8 @@ export const api = {
     },
     deleteWilaya: async (id) => {
         const response = await fetch(`${API_URL}/wilayas/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error('Failed to delete wilaya');
         return response.json();
@@ -159,14 +171,19 @@ export const api = {
 
     // Coupons
     getCoupons: async () => {
-        const response = await fetch(`${API_URL}/coupons`);
+        const response = await fetch(`${API_URL}/coupons`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch coupons');
         return response.json();
     },
     createCoupon: async (couponData) => {
         const response = await fetch(`${API_URL}/coupons`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify(couponData)
         });
         if (!response.ok) throw new Error('Failed to create coupon');
@@ -174,7 +191,8 @@ export const api = {
     },
     deleteCoupon: async (id) => {
         const response = await fetch(`${API_URL}/coupons/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         if (!response.ok) throw new Error('Failed to delete coupon');
         return response.json();

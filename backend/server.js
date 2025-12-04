@@ -32,12 +32,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/wilayas', wilayaRoutes);
 app.use('/api/coupons', couponRoutes);
 
-// Serve static assets in production (now serving built client from backend/public)
+// Serve static assets in production
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'client/dist/index.html'));
 });
 
 // Start Server
