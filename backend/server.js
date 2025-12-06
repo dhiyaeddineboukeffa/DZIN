@@ -26,6 +26,17 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error('MongoDB Connection Error:', err));
 
 // Routes
+const seedDB = require('./seed-module'); // We will create this module
+
+app.get('/seed-setup', async (req, res) => {
+    try {
+        await seedDB();
+        res.send('<h1>Database Seeded Successfully! ✅</h1><p>You can now log in as admin.</p>');
+    } catch (error) {
+        res.status(500).send(`<h1>Error Seeding Database ❌</h1><p>${error.message}</p>`);
+    }
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
