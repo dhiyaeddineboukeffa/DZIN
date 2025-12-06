@@ -78,7 +78,7 @@ const seedDB = async () => {
 
         // Seed Admin User
         const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash('admin123', salt);
+        const passwordHash = await bcrypt.hash('kavebob', salt);
 
         await User.create({
             username: 'admin',
