@@ -12,12 +12,16 @@ router.post('/login', async (req, res) => {
         // Simple admin check (In production, use proper username/password from DB)
         // For this demo, we'll match the hardcoded "admin123" or check against a seeded admin user
 
-        // Check against seeded admin (we will seed this later)
+        // Check against seeded admin
         const adminUser = await User.findOne({ role: 'admin' });
+        console.log('Login attempt for:', 'admin');
+        console.log('Found user:', adminUser ? adminUser.username : 'NULL');
+        if (adminUser) console.log('Stored Hash:', adminUser.passwordHash);
 
         let isValid = false;
         if (adminUser) {
             isValid = await bcrypt.compare(password, adminUser.passwordHash);
+            console.log('Hash Comparison Result:', isValid);
         }
 
         if (!isValid) {
