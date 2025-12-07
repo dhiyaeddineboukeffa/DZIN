@@ -109,22 +109,27 @@ router.post('/', authenticateAdmin, upload.single('image'), async (req, res) => 
 router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) => {
     try {
         const updates = req.body;
+
+        // Handle file upload if present (legacy support or if we add file upload back)
         if (req.file) {
-            updates.image = `/uploads/${req.file.filename}`;
+            updates.image = req.file.path;
         }
 
+        // Parse sizes if it's a string
         if (typeof updates.sizes === 'string') {
             updates.sizes = updates.sizes.split(',').map(s => s.trim());
         }
 
+        // Parse images if present
         if (updates.images) {
             if (typeof updates.images === 'string') {
                 try {
                     updates.images = JSON.parse(updates.images);
                 } catch (e) {
-                    updates.images = updates.images.split(',').map(s => s.trim());
+                    updates.images = updates.images.split(/[\n,]+/).map(s => s.trim());
                 }
             }
+            // Ensure derived 'image' field is updated if images array changes
             if (Array.isArray(updates.images) && updates.images.length > 0) {
                 updates.image = updates.images[0];
             }
@@ -134,6 +139,7 @@ router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) =
         if (!product) return res.status(404).json({ message: 'Product not found' });
         res.json(product);
     } catch (error) {
+        console.error('Update failed:', error);
         res.status(400).json({ message: 'Update failed', error: error.message });
     }
 });

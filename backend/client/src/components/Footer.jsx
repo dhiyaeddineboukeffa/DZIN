@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram, Twitter, Facebook } from 'lucide-react';
+import { Instagram, Twitter, Facebook, Phone } from 'lucide-react';
 
 const Footer = () => {
     return (
@@ -16,11 +16,17 @@ const Footer = () => {
                             <br />
                             Designed by the Streets.
                         </p>
-                        <p className="text-emerald-600 dark:text-emerald-500/80 font-bold tracking-widest text-sm mb-6">
+                        <p className="text-emerald-600 dark:text-emerald-500/80 font-bold tracking-widest text-sm mb-4">
                             アルジェリア生まれ
                         </p>
+
+                        <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-6 font-mono font-bold">
+                            <Phone size={18} className="text-emerald-600 dark:text-emerald-500" />
+                            <span>0562 20 46 26</span>
+                        </div>
+
                         <div className="flex gap-4">
-                            <a href="#" className="text-neutral-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-500 transition-colors">
+                            <a href="https://www.instagram.com/dzin.wear/" target="_blank" rel="noopener noreferrer" className="text-neutral-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-500 transition-colors">
                                 <Instagram size={20} />
                             </a>
                             <a href="#" className="text-neutral-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-500 transition-colors">

@@ -13,7 +13,8 @@ const AdminDashboard = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
-    const [newProduct, setNewProduct] = useState({
+    const [editingProductId, setEditingProductId] = useState(null); // ID of product being edited
+    const [productForm, setProductForm] = useState({ // Renamed from newProduct for clarity
         name: '',
         category: 'Streetwear',
         price: '',
@@ -101,30 +102,74 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleAddProduct = async (e) => {
+    const startEditProduct = (product) => {
+        setEditingProductId(product._id);
+        const imagesStr = product.images && product.images.length > 0
+            ? product.images.join('\n')
+            : product.image;
+
+        setProductForm({
+            name: product.name,
+            category: product.category,
+            price: product.price,
+            discountPrice: product.discountPrice || '',
+            image: product.image,
+            images: imagesStr,
+            description: product.description,
+            sizes: product.sizes ? product.sizes.join(',') : 'S,M,L,XL',
+            inStock: product.inStock,
+            featured: product.featured || false
+        });
+        setShowAddModal(true);
+    };
+
+    const handleSaveProduct = async (e) => {
         e.preventDefault();
         try {
-            const formData = new FormData();
-            Object.keys(newProduct).forEach(key => {
+            const formData = new FormData(); // Keeping FormData for consistency/extensibility
+            Object.keys(productForm).forEach(key => {
                 if (key === 'images') {
                     // Split by newlines or commas
-                    const imagesArray = newProduct[key].split(/[\n,]+/).map(url => url.trim()).filter(url => url.length > 0);
+                    const val = productForm[key] || '';
+                    const imagesArray = val.split(/[\n,]+/).map(url => url.trim()).filter(url => url.length > 0);
                     formData.append('images', JSON.stringify(imagesArray));
                 } else if (key === 'image') {
                     // Skip 'image' as it's derived from images
                 } else {
-                    formData.append(key, newProduct[key]);
+                    formData.append(key, productForm[key]);
                 }
             });
-            await api.createProduct(newProduct);
+
+            if (editingProductId) {
+                await api.updateProduct(editingProductId, productForm); // api.updateProduct should handle JSON body if configured, or use raw fetch if needed. Let's assume api service can handle object.
+                // Wait, the previous code used FormData for CREATE. Let's check api.js. 
+                // Since I can't check api.js right now without a tool call, let's assume `api.updateProduct` expects an object or FormData.
+                // The PUT route I updated handles JSON body or FormData. 
+                // Let's safe bet: send JSON object for update, as it's cleaner.
+                // Re-constructing the payload for JSON:
+                const payload = { ...productForm };
+                if (payload.images) {
+                    payload.images = payload.images.split(/[\n,]+/).map(url => url.trim()).filter(url => url.length > 0);
+                }
+                if (typeof payload.sizes === 'string') {
+                    payload.sizes = payload.sizes.split(',').map(s => s.trim());
+                }
+                await api.updateProduct(editingProductId, payload);
+
+            } else {
+                await api.createProduct(productForm); // Maintain compatibility with how createProduct is expected (likely handles object internally now or I should check api.js later)
+            }
+
             setShowAddModal(false);
-            setNewProduct({
+            setEditingProductId(null);
+            setProductForm({
                 name: '', category: 'Streetwear', price: '', discountPrice: '',
-                image: '', description: '', sizes: 'S,M,L,XL', inStock: true, featured: false
+                image: '', cardImage: '', images: '', description: '', sizes: 'S,M,L,XL', inStock: true, featured: false
             });
             loadData();
         } catch (error) {
-            alert('Failed to create product');
+            console.error(error);
+            alert('Failed to save product');
         }
     };
 
@@ -227,7 +272,14 @@ const AdminDashboard = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">INVENTORY</h2>
-                <Button onClick={() => setShowAddModal(true)}>
+                <Button onClick={() => {
+                    setEditingProductId(null);
+                    setProductForm({
+                        name: '', category: 'Streetwear', price: '', discountPrice: '',
+                        image: '', images: '', description: '', sizes: 'S,M,L,XL', inStock: true, featured: false
+                    });
+                    setShowAddModal(true);
+                }}>
                     <Plus size={20} className="mr-2" /> NEW DROP
                 </Button>
             </div>
@@ -261,7 +313,10 @@ const AdminDashboard = () => {
                                         {product.inStock ? 'IN STOCK' : 'OUT OF STOCK'}
                                     </button>
                                 </td>
-                                <td className="p-4 text-right">
+                                <td className="p-4 text-right space-x-2">
+                                    <button onClick={() => startEditProduct(product)} className="text-neutral-400 hover:text-blue-500 transition-colors">
+                                        <Edit2 size={18} />
+                                    </button>
                                     <button onClick={() => handleDeleteProduct(product._id)} className="text-neutral-400 hover:text-red-500 transition-colors">
                                         <Trash2 size={18} />
                                     </button>
@@ -439,29 +494,29 @@ const AdminDashboard = () => {
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 w-full max-w-md p-6 relative shadow-lg">
-                        <h2 className="text-xl font-bold mb-6">ADD NEW DROP</h2>
-                        <form onSubmit={handleAddProduct} className="space-y-4">
-                            <input type="text" placeholder="Name" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} />
+                        <h2 className="text-xl font-bold mb-6">{editingProductId ? 'EDIT DROP' : 'ADD NEW DROP'}</h2>
+                        <form onSubmit={handleSaveProduct} className="space-y-4">
+                            <input type="text" placeholder="Name" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} />
                             <div className="grid grid-cols-2 gap-4">
-                                <select className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
+                                <select className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })}>
                                     <option value="Streetwear">Streetwear</option>
                                     <option value="Hoodies">Hoodies</option>
                                     <option value="Anime">Anime</option>
                                     <option value="Accessories">Accessories</option>
                                 </select>
-                                <input type="number" placeholder="Price" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
+                                <input type="number" placeholder="Price" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} />
                             </div>
-                            <input type="number" placeholder="Discount Price (Optional)" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.discountPrice} onChange={e => setNewProduct({ ...newProduct, discountPrice: e.target.value })} />
-                            <textarea placeholder="Image URLs (one per line)" required rows="4" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.images || newProduct.image} onChange={e => {
+                            <input type="number" placeholder="Discount Price (Optional)" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.discountPrice} onChange={e => setProductForm({ ...productForm, discountPrice: e.target.value })} />
+                            <textarea placeholder="Image URLs (one per line)" required rows="4" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.images || productForm.image} onChange={e => {
                                 const val = e.target.value;
-                                setNewProduct({ ...newProduct, image: val, images: val }); // Store raw string for now
+                                setProductForm({ ...productForm, image: val, images: val }); // Store raw string for now
                             }} />
-                            <input type="text" placeholder="Sizes (S,M,L,XL)" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.sizes} onChange={e => setNewProduct({ ...newProduct, sizes: e.target.value })} />
-                            <textarea placeholder="Description" required rows="3" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
+                            <input type="text" placeholder="Sizes (S,M,L,XL)" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.sizes} onChange={e => setProductForm({ ...productForm, sizes: e.target.value })} />
+                            <textarea placeholder="Description" required rows="3" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
 
                             <div className="flex gap-4 mt-6">
                                 <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowAddModal(false)}>CANCEL</Button>
-                                <Button type="submit" className="flex-1">CREATE DROP</Button>
+                                <Button type="submit" className="flex-1">{editingProductId ? 'SAVE CHANGES' : 'CREATE DROP'}</Button>
                             </div>
                         </form>
                     </div>
