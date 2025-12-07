@@ -28,6 +28,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    images: [{
+        type: String
+    }],
     sizes: [{
         type: String,
         enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '30', '32', '34', '36']

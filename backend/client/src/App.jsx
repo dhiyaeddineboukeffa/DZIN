@@ -44,7 +44,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/collections" element={<Shop />} />
-                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/product/:id" element={<Navigate to={`/order/${window.location.pathname.split('/product/')[1]}`} replace />} />
                 <Route path="/order/:id" element={<DirectOrder />} />
                 <Route path="/checkout" element={<Checkout />} />
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import Button from '../components/Button';
-import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DirectOrder = () => {
     const { id } = useParams();
@@ -12,6 +12,57 @@ const DirectOrder = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Fallback if images array is empty but image string exists (handling potential merged strings)
+    let displayImages = product?.images?.length > 0 ? product.images : [];
+    if (displayImages.length === 0 && product?.image) {
+        // Check if the single image field actually contains multiple URLs
+        if (product.image.includes('\n') || product.image.includes(',')) {
+            displayImages = product.image.split(/[\n,]+/).map(url => url.trim()).filter(url => url.length > 0);
+        } else {
+            displayImages = [product.image];
+        }
+    }
+
+    const nextImage = () => {
+        if (displayImages.length > 1) {
+            setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
+        }
+    };
+
+    const prevImage = () => {
+        if (displayImages.length > 1) {
+            setCurrentImageIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+        }
+    };
+
+    // Swipe Support
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+        if (isLeftSwipe) {
+            nextImage();
+        }
+        if (isRightSwipe) {
+            prevImage();
+        }
+    };
 
     const [formData, setFormData] = useState({
         name: '',
@@ -103,16 +154,17 @@ const DirectOrder = () => {
         setIsSubmitting(true);
 
         try {
+            const finalProductPrice = product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price;
             const deliveryFee = selectedWilayaObj?.deliveryFee || 0;
             let couponDiscount = 0;
             if (appliedCoupon) {
                 if (appliedCoupon.discountType === 'percentage') {
-                    couponDiscount = Math.round(product.price * (appliedCoupon.discountValue / 100));
+                    couponDiscount = Math.round(finalProductPrice * (appliedCoupon.discountValue / 100));
                 } else {
                     couponDiscount = appliedCoupon.discountValue;
                 }
             }
-            const totalAmount = product.price + deliveryFee - couponDiscount;
+            const totalAmount = finalProductPrice + deliveryFee - couponDiscount;
 
             const orderData = {
                 customer: {
@@ -126,12 +178,12 @@ const DirectOrder = () => {
                 items: [{
                     productId: product._id,
                     name: product.name,
-                    price: product.price,
+                    price: finalProductPrice,
                     size: formData.size,
                     quantity: 1,
                     image: product.image
                 }],
-                subtotal: product.price,
+                subtotal: finalProductPrice,
                 deliveryFee: deliveryFee,
                 coupon: appliedCoupon ? { code: appliedCoupon.code, discount: couponDiscount } : null,
                 totalAmount: totalAmount,
@@ -171,14 +223,68 @@ const DirectOrder = () => {
                     {/* Product Summary */}
                     <div>
                         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 sticky top-24 transition-colors duration-300">
-                            <img src={product.image} alt={product.name} className="w-full aspect-square object-cover mb-6 bg-neutral-100 dark:bg-neutral-800" />
+                            <div
+                                className="relative aspect-square mb-6 bg-neutral-100 dark:bg-neutral-800 overflow-hidden group touch-pan-y"
+                                onTouchStart={onTouchStart}
+                                onTouchMove={onTouchMove}
+                                onTouchEnd={onTouchEnd}
+                            >
+                                {displayImages.length > 0 && (
+                                    <img
+                                        src={displayImages[currentImageIndex]}
+                                        alt={`${product.name} - View ${currentImageIndex + 1}`}
+                                        className="w-full h-full object-cover transition-transform duration-500 select-none"
+                                    />
+                                )}
+
+                                {/* Navigation Arrows */}
+                                {displayImages.length > 1 && (
+                                    <>
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); prevImage(); }}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); nextImage(); }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <ChevronRight size={20} />
+                                        </button>
+
+                                        {/* Dots Indicator */}
+                                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                                            {displayImages.map((_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setCurrentImageIndex(idx)}
+                                                    className={`w-2 h-2 rounded-full transition-all ${currentImageIndex === idx ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/80'
+                                                        }`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                             <h2 className="text-2xl font-bold mb-2 text-neutral-900 dark:text-white">{product.name}</h2>
-                            <p className="text-emerald-600 dark:text-emerald-500 font-mono text-xl mb-4">{product.price.toLocaleString()} DZD</p>
+                            {product.discountPrice && product.discountPrice < product.price ? (
+                                <div className="flex items-center gap-3 mb-4">
+                                    <p className="text-neutral-500 dark:text-neutral-400 font-mono text-lg line-through">{product.price.toLocaleString()} DZD</p>
+                                    <p className="text-emerald-600 dark:text-emerald-500 font-mono text-xl font-bold">{product.discountPrice.toLocaleString()} DZD</p>
+                                </div>
+                            ) : (
+                                <p className="text-emerald-600 dark:text-emerald-500 font-mono text-xl mb-4">{product.price.toLocaleString()} DZD</p>
+                            )}
+
+                            <div className="mb-6 text-sm text-neutral-600 dark:text-neutral-400 prose prose-sm dark:prose-invert">
+                                <p>{product.description}</p>
+                            </div>
 
                             <div className="border-t border-neutral-200 dark:border-neutral-800 pt-4 mt-4 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
                                 <div className="flex justify-between">
                                     <span>Subtotal</span>
-                                    <span>{product.price.toLocaleString()} DZD</span>
+                                    <span>{(product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price).toLocaleString()} DZD</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Delivery ({formData.wilaya || 'Select Wilaya'})</span>
@@ -186,7 +292,7 @@ const DirectOrder = () => {
                                 </div>
                                 <div className="flex justify-between text-neutral-900 dark:text-white font-bold text-lg pt-2 border-t border-neutral-200 dark:border-neutral-800 mt-2">
                                     <span>Total</span>
-                                    <span>{(product.price + (selectedWilayaObj?.deliveryFee || 0)).toLocaleString()} DZD</span>
+                                    <span>{((product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price) + (selectedWilayaObj?.deliveryFee || 0)).toLocaleString()} DZD</span>
                                 </div>
                             </div>
                             {appliedCoupon && (
@@ -194,7 +300,7 @@ const DirectOrder = () => {
                                     <span>Discount ({appliedCoupon.code})</span>
                                     <span>
                                         -{appliedCoupon.discountType === 'percentage'
-                                            ? Math.round(product.price * (appliedCoupon.discountValue / 100)).toLocaleString()
+                                            ? Math.round((product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price) * (appliedCoupon.discountValue / 100)).toLocaleString()
                                             : appliedCoupon.discountValue.toLocaleString()} DZD
                                     </span>
                                 </div>
@@ -202,9 +308,9 @@ const DirectOrder = () => {
                             <div className="flex justify-between text-neutral-900 dark:text-white font-bold text-lg pt-2 border-t border-neutral-200 dark:border-neutral-800 mt-2">
                                 <span>Total</span>
                                 <span>
-                                    {(product.price + (selectedWilayaObj?.deliveryFee || 0) - (appliedCoupon
+                                    {((product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price) + (selectedWilayaObj?.deliveryFee || 0) - (appliedCoupon
                                         ? (appliedCoupon.discountType === 'percentage'
-                                            ? Math.round(product.price * (appliedCoupon.discountValue / 100))
+                                            ? Math.round((product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price) * (appliedCoupon.discountValue / 100))
                                             : appliedCoupon.discountValue)
                                         : 0)).toLocaleString()} DZD
                                 </span>

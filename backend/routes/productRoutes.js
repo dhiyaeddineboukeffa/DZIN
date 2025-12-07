@@ -80,6 +80,20 @@ router.post('/', authenticateAdmin, upload.single('image'), async (req, res) => 
             productData.sizes = productData.sizes.split(',').map(s => s.trim());
         }
 
+        // Parse images if present
+        if (productData.images) {
+            if (typeof productData.images === 'string') {
+                try {
+                    productData.images = JSON.parse(productData.images);
+                } catch (e) {
+                    productData.images = productData.images.split(',').map(s => s.trim());
+                }
+            }
+            if (Array.isArray(productData.images) && productData.images.length > 0) {
+                productData.image = productData.images[0];
+            }
+        }
+
         console.log('Creating product with data:', productData);
         const product = new Product(productData);
         await product.save();
@@ -101,6 +115,19 @@ router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) =
 
         if (typeof updates.sizes === 'string') {
             updates.sizes = updates.sizes.split(',').map(s => s.trim());
+        }
+
+        if (updates.images) {
+            if (typeof updates.images === 'string') {
+                try {
+                    updates.images = JSON.parse(updates.images);
+                } catch (e) {
+                    updates.images = updates.images.split(',').map(s => s.trim());
+                }
+            }
+            if (Array.isArray(updates.images) && updates.images.length > 0) {
+                updates.image = updates.images[0];
+            }
         }
 
         const product = await Product.findByIdAndUpdate(req.params.id, updates, { new: true });

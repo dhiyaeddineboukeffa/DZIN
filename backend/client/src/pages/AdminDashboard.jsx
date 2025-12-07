@@ -106,7 +106,15 @@ const AdminDashboard = () => {
         try {
             const formData = new FormData();
             Object.keys(newProduct).forEach(key => {
-                formData.append(key, newProduct[key]);
+                if (key === 'images') {
+                    // Split by newlines or commas
+                    const imagesArray = newProduct[key].split(/[\n,]+/).map(url => url.trim()).filter(url => url.length > 0);
+                    formData.append('images', JSON.stringify(imagesArray));
+                } else if (key === 'image') {
+                    // Skip 'image' as it's derived from images
+                } else {
+                    formData.append(key, newProduct[key]);
+                }
             });
             await api.createProduct(newProduct);
             setShowAddModal(false);
@@ -444,7 +452,10 @@ const AdminDashboard = () => {
                                 <input type="number" placeholder="Price" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} />
                             </div>
                             <input type="number" placeholder="Discount Price (Optional)" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.discountPrice} onChange={e => setNewProduct({ ...newProduct, discountPrice: e.target.value })} />
-                            <input type="text" placeholder="Image URL" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} />
+                            <textarea placeholder="Image URLs (one per line)" required rows="4" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.images || newProduct.image} onChange={e => {
+                                const val = e.target.value;
+                                setNewProduct({ ...newProduct, image: val, images: val }); // Store raw string for now
+                            }} />
                             <input type="text" placeholder="Sizes (S,M,L,XL)" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.sizes} onChange={e => setNewProduct({ ...newProduct, sizes: e.target.value })} />
                             <textarea placeholder="Description" required rows="3" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} />
 

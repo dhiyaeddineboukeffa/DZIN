@@ -37,5 +37,6 @@ Your production database is empty. You need to create the admin user and initial
 ## Troubleshooting
 
 - **"Application Error"**: Check the **Logs** tab in Railway.
-- **"Connection Error"**: Check your `MONGODB_URI` variable.
+- **"Connection Error" / "MongooseServerSelectionError"**:
+  - **Fix:** Go to MongoDB Atlas -> Network Access -> Add IP Address -> Allow Access From Anywhere (`0.0.0.0/0`). Railway IPs change dynamically, so you must allow all.
 - **Images not loading**: Check your Cloudinary variables.
