@@ -105,7 +105,7 @@ const AdminDashboard = () => {
     const startEditProduct = (product) => {
         setEditingProductId(product._id);
         const imagesStr = product.images && product.images.length > 0
-            ? product.images.join('\n')
+            ? product.images.join(', ')
             : product.image;
 
         setProductForm({
@@ -507,7 +507,7 @@ const AdminDashboard = () => {
                                 <input type="number" placeholder="Price" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} />
                             </div>
                             <input type="number" placeholder="Discount Price (Optional)" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.discountPrice} onChange={e => setProductForm({ ...productForm, discountPrice: e.target.value })} />
-                            <textarea placeholder="Image URLs (one per line)" required rows="4" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.images || productForm.image} onChange={e => {
+                            <textarea placeholder="Image URLs (comma separated)" required rows="4" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.images || productForm.image} onChange={e => {
                                 const val = e.target.value;
                                 setProductForm({ ...productForm, image: val, images: val }); // Store raw string for now
                             }} />
