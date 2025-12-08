@@ -70,7 +70,8 @@ const DirectOrder = () => {
         wilaya: '',
         commune: '',
         address: '',
-        size: ''
+        size: '',
+        color: ''
     });
 
     const [selectedWilayaObj, setSelectedWilayaObj] = useState(null);
@@ -92,6 +93,10 @@ const DirectOrder = () => {
                 // Default size if available
                 if (productData.sizes && productData.sizes.length > 0) {
                     setFormData(prev => ({ ...prev, size: productData.sizes[0] }));
+                }
+                // Default color if available
+                if (productData.colors && productData.colors.length > 0) {
+                    setFormData(prev => ({ ...prev, color: productData.colors[0] }));
                 }
             } catch (error) {
                 console.error('Failed to load data', error);
@@ -181,7 +186,8 @@ const DirectOrder = () => {
                     price: finalProductPrice,
                     size: formData.size,
                     quantity: 1,
-                    image: product.image
+                    image: product.image,
+                    color: formData.color || 'N/A'
                 }],
                 subtotal: finalProductPrice,
                 deliveryFee: deliveryFee,
@@ -407,6 +413,24 @@ const DirectOrder = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            {product.colors && product.colors.length > 0 && (
+                                <div>
+                                    <label className="block text-sm font-bold text-neutral-600 dark:text-neutral-400 mb-2">COLOR</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {product.colors.map(color => (
+                                            <button
+                                                key={color}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, color })}
+                                                className={`p-3 border ${formData.color === color ? 'bg-neutral-900 dark:bg-white text-white dark:text-black border-neutral-900 dark:border-white' : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-600'} transition-all font-bold`}
+                                            >
+                                                {color}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
 
                             <div className="bg-neutral-50 dark:bg-neutral-900/50 p-4 border border-neutral-200 dark:border-neutral-800 rounded mb-6">

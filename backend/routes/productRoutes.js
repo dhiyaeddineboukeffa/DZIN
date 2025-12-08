@@ -80,6 +80,11 @@ router.post('/', authenticateAdmin, upload.single('image'), async (req, res) => 
             productData.sizes = productData.sizes.split(',').map(s => s.trim());
         }
 
+        // Parse colors if it's a string
+        if (typeof productData.colors === 'string' && productData.colors.trim()) {
+            productData.colors = productData.colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        }
+
         // Parse images if present
         if (productData.images) {
             if (typeof productData.images === 'string') {
@@ -118,6 +123,11 @@ router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) =
         // Parse sizes if it's a string
         if (typeof updates.sizes === 'string') {
             updates.sizes = updates.sizes.split(',').map(s => s.trim());
+        }
+
+        // Parse colors if it's a string
+        if (typeof updates.colors === 'string') {
+            updates.colors = updates.colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
         }
 
         // Parse images if present

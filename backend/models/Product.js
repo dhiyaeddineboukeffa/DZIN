@@ -35,6 +35,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '30', '32', '34', '36']
     }],
+    colors: [{
+        type: String
+    }],
     inStock: {
         type: Boolean,
         default: true

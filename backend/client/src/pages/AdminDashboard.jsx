@@ -22,6 +22,7 @@ const AdminDashboard = () => {
         image: '',
         description: '',
         sizes: 'S,M,L,XL',
+        colors: '',
         inStock: true,
         featured: false
     });
@@ -117,6 +118,7 @@ const AdminDashboard = () => {
             images: imagesStr,
             description: product.description,
             sizes: product.sizes ? product.sizes.join(',') : 'S,M,L,XL',
+            colors: product.colors ? product.colors.join(',') : '',
             inStock: product.inStock,
             featured: product.featured || false
         });
@@ -164,7 +166,7 @@ const AdminDashboard = () => {
             setEditingProductId(null);
             setProductForm({
                 name: '', category: 'Streetwear', price: '', discountPrice: '',
-                image: '', cardImage: '', images: '', description: '', sizes: 'S,M,L,XL', inStock: true, featured: false
+                image: '', cardImage: '', images: '', description: '', sizes: 'S,M,L,XL', colors: '', inStock: true, featured: false
             });
             loadData();
         } catch (error) {
@@ -276,7 +278,7 @@ const AdminDashboard = () => {
                     setEditingProductId(null);
                     setProductForm({
                         name: '', category: 'Streetwear', price: '', discountPrice: '',
-                        image: '', images: '', description: '', sizes: 'S,M,L,XL', inStock: true, featured: false
+                        image: '', images: '', description: '', sizes: 'S,M,L,XL', colors: '', inStock: true, featured: false
                     });
                     setShowAddModal(true);
                 }}>
@@ -512,6 +514,7 @@ const AdminDashboard = () => {
                                 setProductForm({ ...productForm, image: val, images: val }); // Store raw string for now
                             }} />
                             <input type="text" placeholder="Sizes (S,M,L,XL)" required className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.sizes} onChange={e => setProductForm({ ...productForm, sizes: e.target.value })} />
+                            <input type="text" placeholder="Colors (Black,White,Red) - Optional" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.colors} onChange={e => setProductForm({ ...productForm, colors: e.target.value })} />
                             <textarea placeholder="Description" required rows="3" className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3" value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} />
 
                             <div className="flex gap-4 mt-6">
