@@ -32,7 +32,7 @@ const ProductCard = ({ product }) => {
                     <div>
                         <p className="text-neutral-500 dark:text-neutral-400 text-xs font-mono mb-1">{product.category}</p>
                         {product.discountPrice && product.discountPrice < product.price ? (
-                            <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex flex-col gap-1">
                                 <p className="text-neutral-500 dark:text-neutral-400 font-mono text-sm line-through">{product.price.toLocaleString()} DZD</p>
                                 <p className="text-emerald-700 dark:text-emerald-500 font-mono font-bold text-lg">{product.discountPrice.toLocaleString()} DZD</p>
                             </div>
