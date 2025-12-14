@@ -85,6 +85,11 @@ router.post('/', authenticateAdmin, upload.single('image'), async (req, res) => 
             productData.colors = productData.colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
         }
 
+        // Handle discountPrice: convert empty string to null
+        if (productData.discountPrice === '' || productData.discountPrice === 'null' || productData.discountPrice === 'undefined') {
+            productData.discountPrice = null;
+        }
+
         // Parse images if present
         if (productData.images) {
             if (typeof productData.images === 'string') {
@@ -128,6 +133,11 @@ router.put('/:id', authenticateAdmin, upload.single('image'), async (req, res) =
         // Parse colors if it's a string
         if (typeof updates.colors === 'string') {
             updates.colors = updates.colors.split(',').map(c => c.trim()).filter(c => c.length > 0);
+        }
+
+        // Handle discountPrice: convert empty string to null
+        if (updates.discountPrice === '' || updates.discountPrice === 'null' || updates.discountPrice === 'undefined') {
+            updates.discountPrice = null;
         }
 
         // Parse images if present

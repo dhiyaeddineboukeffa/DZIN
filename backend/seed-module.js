@@ -13,6 +13,8 @@ const PRODUCTS = [
         description: 'Heavyweight cotton hoodie featuring cyber-enhanced Algiers cityscape. Limited edition drop.',
         sizes: ['S', 'M', 'L', 'XL', 'XXL'],
         colors: ['Black', 'White', 'Gray'],
+        price: 8500,
+        discountPrice: 6500,
         inStock: true,
         featured: true,
     },
