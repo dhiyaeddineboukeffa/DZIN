@@ -9,6 +9,7 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const wilayaRoutes = require('./routes/wilayaRoutes');
 const couponRoutes = require('./routes/coupons');
+const settingRoutes = require('./routes/settingRoutes'); // New
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use(helmet({
             ],
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
+            frameSrc: ["'self'", "https://www.instagram.com"], // Allow Instagram Embeds
         },
     },
 }));
@@ -56,6 +58,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/wilayas', wilayaRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/settings', settingRoutes); // New
 
 // Serve static assets in production
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

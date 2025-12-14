@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Trash2, Search, Filter, ShoppingBag, Truck, Tag, LayoutGrid, Edit2, X, Save } from 'lucide-react';
+import { Package, Plus, Trash2, Search, Filter, ShoppingBag, Truck, Tag, LayoutGrid, Edit2, X, Save, Video } from 'lucide-react';
 import { api } from '../services/api';
 import Button from '../components/Button';
 import ConfirmModal from '../components/ConfirmModal';
@@ -40,6 +40,9 @@ const AdminDashboard = () => {
     const [coupons, setCoupons] = useState([]);
     const [newCoupon, setNewCoupon] = useState({ code: '', discountPercentage: '' });
 
+    // Content Settings State
+    const [contentSettings, setContentSettings] = useState({ manifesto_video: '' });
+
     // Confirmation Modal State
     const [confirmModal, setConfirmModal] = useState({ show: false, message: '', onConfirm: null });
 
@@ -58,6 +61,9 @@ const AdminDashboard = () => {
             } else if (activeTab === 'extra') {
                 const data = await api.getCoupons();
                 setCoupons(data);
+            } else if (activeTab === 'content') {
+                const setting = await api.getSetting('manifesto_video');
+                setContentSettings({ manifesto_video: setting.value || '' });
             }
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -265,6 +271,9 @@ const AdminDashboard = () => {
                 </button>
                 <button onClick={() => setActiveTab('extra')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${activeTab === 'extra' ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
                     <Tag size={20} /> <span className="font-medium">EXTRA</span>
+                </button>
+                <button onClick={() => setActiveTab('content')} className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${activeTab === 'content' ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}>
+                    <Video size={20} /> <span className="font-medium">CONTENT</span>
                 </button>
             </nav>
         </div>
@@ -481,6 +490,38 @@ const AdminDashboard = () => {
         </div>
     );
 
+    const renderContent = () => (
+        <div className="max-w-2xl">
+            <h2 className="text-2xl font-bold mb-6">CONTENT SETTINGS</h2>
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-8">
+                <h3 className="font-bold mb-4 text-lg">HOMEPAGE VIDEO (MANIFESTO)</h3>
+                <p className="text-sm text-neutral-500 mb-4">
+                    Paste the full Instagram Reel URL here (e.g., https://www.instagram.com/reel/C8.../).
+                    This will replace the static image on the homepage.
+                </p>
+                <div className="space-y-4">
+                    <input
+                        type="text"
+                        placeholder="Instagram Reel (URL)"
+                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-3"
+                        value={contentSettings.manifesto_video}
+                        onChange={(e) => setContentSettings({ ...contentSettings, manifesto_video: e.target.value })}
+                    />
+                    <Button onClick={async () => {
+                        try {
+                            await api.updateSetting('manifesto_video', contentSettings.manifesto_video);
+                            alert('Video updated successfully!');
+                        } catch (e) {
+                            alert('Failed to update video');
+                        }
+                    }}>
+                        SAVE CHANGES
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white">
             {renderSidebar()}
@@ -490,6 +531,7 @@ const AdminDashboard = () => {
                 {activeTab === 'orders' && renderOrders()}
                 {activeTab === 'shipment' && renderShipment()}
                 {activeTab === 'extra' && renderExtra()}
+                {activeTab === 'content' && renderContent()}
             </main>
 
             {/* Add Drop Modal */}

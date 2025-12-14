@@ -8,8 +8,22 @@ import { api } from '../services/api';
 const Home = () => {
     const [featuredProducts, setFeaturedProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [videoSetting, setVideoSetting] = useState(null);
 
     useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const s = await api.getSetting('manifesto_video');
+                if (s.value) {
+                    const match = s.value.match(/(?:reel|p)\/([a-zA-Z0-9_-]+)/);
+                    if (match) setVideoSetting(match[1]);
+                }
+            } catch (e) {
+                console.error('Failed video setting', e);
+            }
+        };
+        loadSettings();
+
         const loadProducts = async () => {
             try {
                 const products = await api.getProducts();
@@ -115,17 +129,28 @@ const Home = () => {
                             </p>
                         </div>
                     </div>
-                    <div className="relative aspect-video bg-neutral-200 dark:bg-neutral-900 overflow-hidden group">
-                        <img
-                            src="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&fit=crop&q=80&w=1000"
-                            alt="Manifesto"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full border border-white/30 flex items-center justify-center backdrop-blur-sm">
-                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[20px] border-l-white border-b-[10px] border-b-transparent ml-1" />
-                            </div>
-                        </div>
+                    <div className={`relative ${videoSetting ? 'aspect-[9/16] max-w-sm mx-auto' : 'aspect-video'} bg-neutral-200 dark:bg-neutral-900 overflow-hidden group w-full`}>
+                        {videoSetting ? (
+                            <iframe
+                                src={`https://www.instagram.com/reel/${videoSetting}/embed`}
+                                className="w-full h-full object-cover"
+                                frameBorder="0"
+                                allowFullScreen
+                            />
+                        ) : (
+                            <>
+                                <img
+                                    src="https://images.unsplash.com/photo-1535295972055-1c762f4483e5?auto=format&fit=crop&q=80&w=1000"
+                                    alt="Manifesto"
+                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-20 h-20 rounded-full border border-white/30 flex items-center justify-center backdrop-blur-sm">
+                                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[20px] border-l-white border-b-[10px] border-b-transparent ml-1" />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </section>

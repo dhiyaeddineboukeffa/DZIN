@@ -196,5 +196,24 @@ export const api = {
         });
         if (!response.ok) throw new Error('Failed to delete coupon');
         return response.json();
+    },
+
+    // Settings
+    getSetting: async (key) => {
+        const response = await fetch(`${API_URL}/settings/${key}`);
+        if (!response.ok) throw new Error('Failed to fetch setting');
+        return response.json();
+    },
+    updateSetting: async (key, value) => {
+        const response = await fetch(`${API_URL}/settings/${key}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({ value })
+        });
+        if (!response.ok) throw new Error('Failed to update setting');
+        return response.json();
     }
 };
