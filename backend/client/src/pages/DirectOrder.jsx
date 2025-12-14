@@ -372,18 +372,14 @@ const DirectOrder = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-bold text-neutral-600 dark:text-neutral-400 mb-2">COMMUNE</label>
-                                    <select
+                                    <input
+                                        type="text"
                                         required
-                                        disabled={!selectedWilayaObj}
-                                        className="w-full bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-4 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none appearance-none disabled:opacity-50"
+                                        className="w-full bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-neutral-800 p-4 text-neutral-900 dark:text-white focus:border-emerald-500 outline-none transition-colors"
+                                        placeholder="Enter Commune"
                                         value={formData.commune}
                                         onChange={e => setFormData({ ...formData, commune: e.target.value })}
-                                    >
-                                        <option value="">Select Commune</option>
-                                        {selectedWilayaObj?.communes?.map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
                             </div>
 
